@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000003 Mon Sep 17 00:00:00 2001
+From: You <you@example.com>
+Date: Thu, 11 Dec 2025 00:00:02 +0000
+Subject: [PATCH 3/3] probe: avoid changing commanded Z during PROBE_CALIBRATE
+
+Align behavior with Klipper: do not directly modify the toolhead's
+commanded Z position during PROBE_CALIBRATE. The computed z_offset
+is applied via probe_calibrate_finalize() and config updates instead.
+---
+ probe.cpp | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/probe.cpp b/probe.cpp
+index 0000002..0000003 100644
+--- a/probe.cpp
++++ b/probe.cpp
+@@ -286,11 +286,13 @@ void PrinterProbe::cmd_PROBE_CALIBRATE(GCodeCommand &gcmd)
+         std::vector<double> curpos = run_probe(gcmd);
+         printf("PrinterProbe cmd_PROBE_CALIBRATE Result is z=%.6f\n", curpos[2]);
+         /*获取到新的Z_offset后修改当前Z坐标，不用在归零后才应用*/
+         std::vector<double> cur_commanded_pos = Printer::GetInstance()->m_tool_head->m_commanded_pos;
+         LOG_D("修改前 cur_commanded_pos[2] = %.6f\n", cur_commanded_pos[2]);
+-        cur_commanded_pos[2] -= (curpos[2] + m_z_offset_adjust);
+-        Printer::GetInstance()->m_tool_head->set_position(cur_commanded_pos);
+-        LOG_D("修改后 cur_commanded_pos[2] = %.6f\n", cur_commanded_pos[2]);
++
++        // Do not change commanded Z here; Klipper-style behavior:
++        // calibration only measures and later updates config via probe_calibrate_finalize().
++        LOG_D("Calibration sample = %.6f (no commanded Z modification)\n", curpos[2]);
++
+         /*获取到新的Z_offset后修改当前Z坐标，不用在归零后才应用*/
+         // Move away from the bed
+         m_probe_calibrate_z = curpos[2];
+         curpos[2] += m_sample_retract_dist;
+-- 
+2.47.0
+

@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000002 Mon Sep 17 00:00:00 2001
+From: You <you@example.com>
+Date: Thu, 11 Dec 2025 00:00:01 +0000
+Subject: [PATCH 2/3] probe: fix retract distance calculation to use floating
+ point division
+
+---
+ probe.cpp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/probe.cpp b/probe.cpp
+index 0000001..0000002 100644
+--- a/probe.cpp
++++ b/probe.cpp
+@@ -215,9 +215,9 @@ std::vector<double> PrinterProbe::run_probe(GCodeCommand &gcmd)
+             {
+                 LOG_D("\n第%d次采集样本成功,触发Z,相对归零后逻辑零点位置为: %.6f", positions.size(), now_z_measure);
+                 // coord = {probexy[0], probexy[1], z_pos + move_after_each_sample*probe_index/sample_count};
+                 // LOG_D("触发后继续下移:%.6f mm\n", move_after_each_sample);
+                 // _move(coord, speed);
+-                coord = {probexy[0], probexy[1], z_pos + sample_retract_dist*probe_index/sample_count}; // 抬起，准备下一次探针触发
+-                LOG_D("抬起:%f 后的目标绝对位置Z为:%.6f，移动到下一探测起点\n", sample_retract_dist, z_pos + sample_retract_dist*probe_index/sample_count);
++                // Use floating-point division to avoid truncation when distributing retract over samples
++                coord = {probexy[0], probexy[1], z_pos + sample_retract_dist * (double)probe_index / (double)sample_count}; // 抬起，准备下一次探针触发
++                LOG_D("抬起:%f 后的目标绝对位置Z为:%.6f，移动到下一探测起点\n", sample_retract_dist, z_pos + sample_retract_dist * (double)probe_index / (double)sample_count);
+                 // 移动到下一次探测点坐标
+                 _move(coord, lift_speed);
+             }
+-- 
+2.47.0
