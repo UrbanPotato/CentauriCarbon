@@ -291,6 +291,12 @@ std::vector<double> PrinterProbe::run_probe(GCodeCommand &gcmd)
         {
             speed = gcmd.get_double("PROBE_SPEED", m_speed, DBL_MIN, DBL_MAX, 0.0);
         }
+		
+		double requested_speed = speed;
+		speed = 1.0;  //clamp Z descent to this to hopefully improve accuracy 
+        LOG_W("Probe descent speed clamped: requested=%.3f mm/s -> using %.3f mm/s\n",
+              requested_speed, speed);
+		
         LOG_D("准备执行探测,当前Z 坐标%.6f,探测速度为%.2f\n", Printer::GetInstance()->m_tool_head->get_position()[2], speed); // 获取的这个位置是应用了position_endstop之后的坐标
         // 执行 run_G29_Z
         std::vector<double> pos = _probe(speed);                                                                              // 采集样本
